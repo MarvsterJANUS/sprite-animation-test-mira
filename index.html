@@ -292,10 +292,11 @@
 
 
 <script>
+  const BASE = 'https://github.com/MarvsterJANUS/sprite-animation-test-mira/releases/download/v1.0/';
   const ANIMS = {
-    idle:     { src: 'idle-spritesheet.png',     frameW: 1080, frameH: 1920, cols: 10, totalFrames: 86, rangeStart: 0, rangeEnd: 66 },
-    explaining: { src: 'explaining-spritesheet.png', frameW: 1080, frameH: 1920, cols: 9,  totalFrames: 75, rangeStart: 0, rangeEnd: 74 },
-    greeting:   { src: 'greeting-spritesheet.png',   frameW: 1080, frameH: 1920, cols: 10, totalFrames: 93, rangeStart: 0, rangeEnd: 92 },
+    idle:       { src: BASE + 'idle-spritesheet.png',       frameW: 1080, frameH: 1920, cols: 10, totalFrames: 86, rangeStart: 0, rangeEnd: 66 },
+    explaining: { src: BASE + 'explaining-spritesheet.png', frameW: 1080, frameH: 1920, cols: 9,  totalFrames: 75, rangeStart: 0, rangeEnd: 74 },
+    greeting:   { src: BASE + 'greeting-spritesheet.png',   frameW: 1080, frameH: 1920, cols: 10, totalFrames: 93, rangeStart: 0, rangeEnd: 92 },
   };
 
   const canvas  = document.getElementById('sprite-canvas');
