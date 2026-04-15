@@ -428,6 +428,7 @@
       <kbd>3</kbd><span>Switch to Greeting</span>
       <kbd>4</kbd><span>Switch to Thinking</span>
       <kbd>5</kbd><span>Switch to Thinking 2</span>
+      <kbd>6</kbd><span>Switch to Winning</span>
       <kbd>?</kbd><span>Toggle this panel</span>
     </div>
     <button id="btn-close-hotkeys">Close</button>
@@ -441,8 +442,9 @@
     greeting:   { src: 'video-animations/greeting.mp4',   label: 'Greeting' },
     thinking:   { src: 'video-animations/thinking.mp4',   label: 'Thinking' },
     thinking2:  { src: 'video-animations/thinking-2.mp4', label: 'Thinking 2' },
+    winning:    { src: 'video-animations/winning.mp4',    label: 'Winning' },
   };
-  const ANIM_KEYS = ['idle', 'explaining', 'greeting', 'thinking', 'thinking2'];
+  const ANIM_KEYS = ['idle', 'explaining', 'greeting', 'thinking', 'thinking2', 'winning'];
   const FRAME_W = 1080;
   const FRAME_H = 1920;
 
@@ -688,6 +690,7 @@
       case '3': loadAnimInSlot(slots[activeSlotIndex], 'greeting');   break;
       case '4': loadAnimInSlot(slots[activeSlotIndex], 'thinking');   break;
       case '5': loadAnimInSlot(slots[activeSlotIndex], 'thinking2');  break;
+      case '6': loadAnimInSlot(slots[activeSlotIndex], 'winning');    break;
       case '?': toggleHotkeys(); break;
     }
   });
