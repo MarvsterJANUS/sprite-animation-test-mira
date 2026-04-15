@@ -67,12 +67,97 @@
     }
     .bg-swatch.active { border-color: #a78bfa; }
 
-    #sprite-video {
-      border-radius: 6px;
-      object-fit: contain;
-      display: block;
+    /* ── Video container & slots ── */
+    #video-container {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: center;
     }
 
+    .video-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .video-slot video {
+      display: block;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    /* ── Scrub bar ── */
+    .scrub-track {
+      width: 100%;
+      height: 6px;
+      background: #2d2d4e;
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .scrub-track:hover { background: #3d3d6e; }
+
+    .scrub-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: #7c3aed;
+      border-radius: 3px;
+      pointer-events: none;
+      width: 0%;
+      transition: width 0.05s linear;
+    }
+
+    .scrub-handle {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #a78bfa;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .scrub-track:hover .scrub-handle { opacity: 1; }
+
+    /* ── Mini animation selector (per slot) ── */
+    .slot-anim-selector {
+      display: flex;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .slot-btn {
+      flex: 1;
+      background: #0f0f1a;
+      border: 1px solid #2d2d4e;
+      border-radius: 5px;
+      color: #888;
+      font-size: 0.72rem;
+      padding: 4px 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .slot-btn:hover { background: #1e1e3a; color: #e0e0e0; }
+    .slot-btn.active {
+      background: #2d1b69;
+      border-color: #7c3aed;
+      color: #e0e0e0;
+    }
+
+    .slot-time {
+      font-size: 0.72rem;
+      color: #555;
+      font-variant-numeric: tabular-nums;
+      align-self: flex-start;
+    }
+
+    /* ── Playback controls ── */
     #playback-controls {
       display: flex;
       gap: 10px;
@@ -89,10 +174,7 @@
       transition: background 0.15s;
     }
     button:hover { background: #3d3d6e; }
-    button.primary {
-      background: #5b21b6;
-      border-color: #7c3aed;
-    }
+    button.primary { background: #5b21b6; border-color: #7c3aed; }
     button.primary:hover { background: #6d28d9; }
 
     /* ── Settings panel ── */
@@ -103,9 +185,9 @@
       border-radius: 12px;
       padding: 16px 20px;
       width: 300px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
       align-content: start;
       overflow-y: auto;
     }
@@ -113,10 +195,8 @@
     .field {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
     }
-
-    .field.full { grid-column: 1 / -1; }
 
     label {
       font-size: 0.75rem;
@@ -147,38 +227,112 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* ── Animation selector ── */
-    #anim-selector {
+    /* ── Toggle button group ── */
+    .btn-group {
       display: flex;
       gap: 6px;
-      flex-wrap: wrap;
     }
 
-    .anim-btn {
+    .toggle-btn {
       flex: 1;
       background: #0f0f1a;
       border: 1px solid #2d2d4e;
       border-radius: 6px;
-      color: #aaa;
+      color: #888;
       font-size: 0.8rem;
-      padding: 5px 8px;
+      padding: 6px 8px;
       cursor: pointer;
       text-align: center;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
-    .anim-btn:hover { background: #1e1e3a; color: #e0e0e0; }
-    .anim-btn.active {
+    .toggle-btn:hover { background: #1e1e3a; color: #e0e0e0; }
+    .toggle-btn.active {
       background: #2d1b69;
       border-color: #7c3aed;
       color: #e0e0e0;
     }
 
-    /* ── Info bar ── */
-    #info-bar {
-      font-size: 0.78rem;
-      color: #555;
+    /* ── Full-width action button ── */
+    .full-btn {
+      width: 100%;
+      padding: 7px 12px;
+      font-size: 0.82rem;
       text-align: center;
+      background: #0f0f1a;
+      border: 1px solid #2d2d4e;
+      border-radius: 6px;
+      color: #aaa;
+    }
+    .full-btn:hover { background: #1e1e3a; color: #e0e0e0; }
+
+    hr.divider {
+      border: none;
+      border-top: 1px solid #2d2d4e;
+      margin: 0;
+    }
+
+    /* ── Hotkey overlay ── */
+    #hotkey-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #hotkey-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #hotkey-panel {
+      background: #16213e;
+      border: 1px solid #2d2d4e;
+      border-radius: 14px;
+      padding: 28px 32px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #hotkey-panel h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #a78bfa;
+    }
+
+    .hotkey-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px 20px;
+      align-items: center;
+    }
+
+    kbd {
+      background: #0f0f1a;
+      border: 1px solid #44446a;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: #a78bfa;
       white-space: nowrap;
+      justify-self: start;
+    }
+
+    .hotkey-grid span {
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+
+    #btn-close-hotkeys {
+      align-self: flex-end;
+      padding: 6px 20px;
     }
   </style>
 </head>
@@ -191,34 +345,34 @@
     <span>Background:</span>
     <div class="bg-swatch active" data-color="#0f0f1a" style="background:#0f0f1a" title="Dark"></div>
     <div class="bg-swatch" data-color="#1a1a1a" style="background:#1a1a1a" title="Black"></div>
-    <div class="bg-swatch" data-color="#ffffff" style="background:#ffffff; border-color:#ccc" title="White"></div>
+    <div class="bg-swatch" data-color="#ffffff" style="background:#ffffff;border-color:#ccc" title="White"></div>
     <div class="bg-swatch" data-color="#4ade80" style="background:#4ade80" title="Green screen"></div>
-    <div class="bg-swatch" data-color="transparent" style="background: repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 0 0 / 12px 12px" title="Transparent"></div>
+    <div class="bg-swatch" data-color="transparent" style="background:repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 0 0/12px 12px" title="Transparent"></div>
   </div>
 
-  <video id="sprite-video" loop muted playsinline autoplay></video>
+  <div id="video-container"></div>
 
   <div id="playback-controls">
     <button id="btn-play" class="primary">⏸ Pause</button>
     <button id="btn-reset">&#8635; Reset</button>
   </div>
-  <div id="info-bar"><span id="time-display">0.0s / 0.0s</span></div>
 </div>
 
 <div id="settings">
 
-  <!-- Animation selector -->
-  <div class="field full">
-    <label>Animation</label>
-    <div id="anim-selector">
-      <button class="anim-btn active" data-anim="idle">Idle</button>
-      <button class="anim-btn" data-anim="explaining">Explaining</button>
-      <button class="anim-btn" data-anim="greeting">Greeting</button>
+  <div class="field">
+    <label>View</label>
+    <div class="btn-group">
+      <button class="toggle-btn active" id="btn-single">Single</button>
+      <button class="toggle-btn" id="btn-sidebyside">Side by Side</button>
     </div>
   </div>
 
-  <!-- Speed -->
-  <div class="field full">
+  <button class="full-btn" id="btn-fit">&#8942; Fit to Window &nbsp;<kbd style="font-size:0.7rem;padding:1px 5px">F</kbd></button>
+
+  <hr class="divider">
+
+  <div class="field">
     <label>Speed</label>
     <div class="input-row">
       <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1">
@@ -226,94 +380,276 @@
     </div>
   </div>
 
-  <!-- Scale -->
-  <div class="field full">
+  <div class="field">
     <label>Scale</label>
     <div class="input-row">
-      <input type="range" id="scale" min="0.05" max="1" step="0.05" value="0.3">
+      <input type="range" id="scale" min="0.05" max="1.5" step="0.05" value="0.3">
       <span class="value-badge" id="scale-val">0.3×</span>
     </div>
   </div>
 
+  <hr class="divider">
+
+  <button class="full-btn" id="btn-hotkeys">? &nbsp;Keyboard Shortcuts</button>
+
+</div>
+
+<!-- Hotkey overlay -->
+<div id="hotkey-overlay">
+  <div id="hotkey-panel">
+    <h2>Keyboard Shortcuts</h2>
+    <div class="hotkey-grid">
+      <kbd>Space</kbd><span>Play / Pause</span>
+      <kbd>R</kbd><span>Reset to start</span>
+      <kbd>F</kbd><span>Fit to window</span>
+      <kbd>S</kbd><span>Toggle Side by Side</span>
+      <kbd>1</kbd><span>Switch to Idle</span>
+      <kbd>2</kbd><span>Switch to Explaining</span>
+      <kbd>3</kbd><span>Switch to Greeting</span>
+      <kbd>?</kbd><span>Toggle this panel</span>
+    </div>
+    <button id="btn-close-hotkeys">Close</button>
+  </div>
 </div>
 
 <script>
   const ANIMS = {
-    idle:       { src: 'video-animations/idle.mp4' },
-    explaining: { src: 'video-animations/explaining.mp4' },
-    greeting:   { src: 'video-animations/greeting.mp4' },
+    idle:       { src: 'video-animations/idle.mp4',       label: 'Idle' },
+    explaining: { src: 'video-animations/explaining.mp4', label: 'Explaining' },
+    greeting:   { src: 'video-animations/greeting.mp4',   label: 'Greeting' },
   };
-
-  const video = document.getElementById('sprite-video');
-
+  const ANIM_KEYS = ['idle', 'explaining', 'greeting'];
   const FRAME_W = 1080;
   const FRAME_H = 1920;
-  let scale = 0.3;
 
+  let scale      = 0.3;
+  let sideBySide = false;
+  let playing    = true;
+  let slots      = [];
+  let activeScrubSlot = null;
+
+  // ── Slot creation ────────────────────────────────────────
+  function createSlot(animKey) {
+    const el = document.createElement('div');
+    el.className = 'video-slot';
+
+    const video = document.createElement('video');
+    video.loop = true;
+    video.muted = true;
+    video.setAttribute('playsinline', '');
+    el.appendChild(video);
+
+    // Scrub track
+    const scrubTrack = document.createElement('div');
+    scrubTrack.className = 'scrub-track';
+    const scrubFill = document.createElement('div');
+    scrubFill.className = 'scrub-fill';
+    const scrubHandle = document.createElement('div');
+    scrubHandle.className = 'scrub-handle';
+    scrubTrack.appendChild(scrubFill);
+    scrubTrack.appendChild(scrubHandle);
+    el.appendChild(scrubTrack);
+
+    // Mini anim selector
+    const selector = document.createElement('div');
+    selector.className = 'slot-anim-selector';
+    ANIM_KEYS.forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'slot-btn' + (key === animKey ? ' active' : '');
+      btn.textContent = ANIMS[key].label;
+      btn.dataset.anim = key;
+      btn.addEventListener('click', () => loadAnimInSlot(slotObj, key));
+      selector.appendChild(btn);
+    });
+    el.appendChild(selector);
+
+    // Time label
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'slot-time';
+    timeLabel.textContent = '0.0s / 0.0s';
+    el.appendChild(timeLabel);
+
+    const slotObj = { el, video, scrubFill, scrubHandle, scrubTrack, timeLabel, animKey };
+
+    video.addEventListener('timeupdate', () => updateScrub(slotObj));
+    scrubTrack.addEventListener('mousedown', e => { activeScrubSlot = slotObj; seekSlot(e, slotObj); });
+    scrubTrack.addEventListener('touchstart', e => { activeScrubSlot = slotObj; seekSlot(e.touches[0], slotObj); }, { passive: true });
+
+    return slotObj;
+  }
+
+  function loadAnimInSlot(slotObj, animKey) {
+    slotObj.animKey = animKey;
+    slotObj.video.src = ANIMS[animKey].src;
+    slotObj.video.load();
+    if (playing) slotObj.video.play();
+    slotObj.el.querySelectorAll('.slot-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.anim === animKey);
+    });
+  }
+
+  // ── Render slots ─────────────────────────────────────────
+  function renderSlots(preserveKeys) {
+    const container = document.getElementById('video-container');
+    const prevKeys  = preserveKeys || slots.map(s => s.animKey);
+    container.innerHTML = '';
+    slots = [];
+    const count = sideBySide ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const key     = prevKeys[i] || ANIM_KEYS[i % ANIM_KEYS.length];
+      const slotObj = createSlot(key);
+      container.appendChild(slotObj.el);
+      slots.push(slotObj);
+      loadAnimInSlot(slotObj, key);
+    }
+    applyScale();
+  }
+
+  // ── Scale ─────────────────────────────────────────────────
   function applyScale() {
-    video.style.width  = (FRAME_W * scale) + 'px';
-    video.style.height = (FRAME_H * scale) + 'px';
+    const w = (FRAME_W * scale) + 'px';
+    const h = (FRAME_H * scale) + 'px';
+    slots.forEach(s => {
+      s.video.style.width  = w;
+      s.video.style.height = h;
+      s.el.style.width     = w;
+    });
   }
 
-  // ── Load animation ──────────────────────────────────────
-  function loadAnim(key) {
-    const a = ANIMS[key];
-    if (!a) return;
-    video.src = a.src;
-    video.load();
-    video.play();
+  function fitToWindow() {
+    const area      = document.getElementById('preview-area');
+    const pad       = 40;
+    const reserved  = 130; // bg-selector + controls + gaps
+    const gap       = sideBySide ? 16 : 0;
+    const count     = sideBySide ? 2 : 1;
+    const availW    = (area.clientWidth  - pad - gap) / count;
+    const availH    = area.clientHeight  - pad - reserved;
+    const s         = Math.min(availW / FRAME_W, availH / FRAME_H);
+    scale           = Math.max(0.05, Math.round(s * 100) / 100);
+    const slider    = document.getElementById('scale');
+    slider.value    = Math.min(scale, parseFloat(slider.max));
+    document.getElementById('scale-val').textContent = scale.toFixed(2).replace(/\.?0+$/, '') + '×';
+    applyScale();
   }
 
-  // ── Init ────────────────────────────────────────────────
-  applyScale();
-  loadAnim('idle');
+  // ── Speed ─────────────────────────────────────────────────
+  function applySpeed(v) {
+    slots.forEach(s => { s.video.playbackRate = v; });
+  }
 
-  // ── Time display ────────────────────────────────────────
-  video.addEventListener('timeupdate', () => {
+  // ── Playback ──────────────────────────────────────────────
+  function playAll() {
+    playing = true;
+    slots.forEach(s => s.video.play());
+    document.getElementById('btn-play').textContent = '⏸ Pause';
+  }
+
+  function pauseAll() {
+    playing = false;
+    slots.forEach(s => s.video.pause());
+    document.getElementById('btn-play').textContent = '▶ Play';
+  }
+
+  function resetAll() {
+    slots.forEach(s => { s.video.currentTime = 0; });
+  }
+
+  // ── Scrub bar ─────────────────────────────────────────────
+  function updateScrub(slotObj) {
+    const { video, scrubFill, scrubHandle, timeLabel } = slotObj;
+    const pct = isNaN(video.duration) ? 0 : (video.currentTime / video.duration) * 100;
+    scrubFill.style.width         = pct + '%';
+    scrubHandle.style.left        = pct + '%';
     const cur = video.currentTime.toFixed(1);
     const dur = isNaN(video.duration) ? '0.0' : video.duration.toFixed(1);
-    document.getElementById('time-display').textContent = cur + 's / ' + dur + 's';
-  });
+    timeLabel.textContent = cur + 's / ' + dur + 's';
+  }
 
-  // ── Playback controls ───────────────────────────────────
-  document.getElementById('btn-play').addEventListener('click', () => {
-    if (video.paused) {
-      video.play();
-      document.getElementById('btn-play').textContent = '⏸ Pause';
-    } else {
-      video.pause();
-      document.getElementById('btn-play').textContent = '▶ Play';
+  function seekSlot(e, slotObj) {
+    const rect  = slotObj.scrubTrack.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    if (!isNaN(slotObj.video.duration)) {
+      slotObj.video.currentTime = ratio * slotObj.video.duration;
     }
-  });
+  }
 
-  document.getElementById('btn-reset').addEventListener('click', () => {
-    video.currentTime = 0;
-  });
+  document.addEventListener('mousemove', e => { if (activeScrubSlot) seekSlot(e, activeScrubSlot); });
+  document.addEventListener('mouseup',   () => { activeScrubSlot = null; });
+  document.addEventListener('touchmove', e => { if (activeScrubSlot) seekSlot(e.touches[0], activeScrubSlot); });
+  document.addEventListener('touchend',  () => { activeScrubSlot = null; });
 
-  // ── Speed slider ────────────────────────────────────────
+  // ── Playback controls ─────────────────────────────────────
+  document.getElementById('btn-play').addEventListener('click', () => {
+    if (playing) pauseAll(); else playAll();
+  });
+  document.getElementById('btn-reset').addEventListener('click', resetAll);
+
+  // ── Speed slider ──────────────────────────────────────────
   document.getElementById('speed').addEventListener('input', e => {
     const v = parseFloat(e.target.value);
-    video.playbackRate = v;
+    applySpeed(v);
     document.getElementById('speed-val').textContent = v + '×';
   });
 
-  // ── Scale slider ────────────────────────────────────────
+  // ── Scale slider ──────────────────────────────────────────
   document.getElementById('scale').addEventListener('input', e => {
     scale = parseFloat(e.target.value);
     document.getElementById('scale-val').textContent = scale.toFixed(2).replace(/\.?0+$/, '') + '×';
     applyScale();
   });
 
-  // ── Animation selector ──────────────────────────────────
-  document.querySelectorAll('.anim-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadAnim(btn.dataset.anim);
-    });
+  // ── Fit to window ─────────────────────────────────────────
+  document.getElementById('btn-fit').addEventListener('click', fitToWindow);
+
+  // ── View toggle ───────────────────────────────────────────
+  document.getElementById('btn-single').addEventListener('click', () => {
+    if (sideBySide) {
+      sideBySide = false;
+      document.getElementById('btn-single').classList.add('active');
+      document.getElementById('btn-sidebyside').classList.remove('active');
+      renderSlots();
+    }
+  });
+  document.getElementById('btn-sidebyside').addEventListener('click', () => {
+    if (!sideBySide) {
+      sideBySide = true;
+      document.getElementById('btn-sidebyside').classList.add('active');
+      document.getElementById('btn-single').classList.remove('active');
+      renderSlots(['idle', 'explaining']);
+    }
   });
 
-  // ── Background swatches ─────────────────────────────────
+  // ── Hotkey overlay ────────────────────────────────────────
+  function toggleHotkeys() {
+    document.getElementById('hotkey-overlay').classList.toggle('visible');
+  }
+  document.getElementById('btn-hotkeys').addEventListener('click', toggleHotkeys);
+  document.getElementById('btn-close-hotkeys').addEventListener('click', toggleHotkeys);
+  document.getElementById('hotkey-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) toggleHotkeys();
+  });
+
+  // ── Keyboard shortcuts ────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    switch (e.key) {
+      case ' ':
+        e.preventDefault();
+        if (playing) pauseAll(); else playAll();
+        break;
+      case 'r': case 'R': resetAll(); break;
+      case 'f': case 'F': fitToWindow(); break;
+      case 's': case 'S':
+        document.getElementById(sideBySide ? 'btn-single' : 'btn-sidebyside').click();
+        break;
+      case '1': if (slots[0]) loadAnimInSlot(slots[0], 'idle');       break;
+      case '2': if (slots[0]) loadAnimInSlot(slots[0], 'explaining'); break;
+      case '3': if (slots[0]) loadAnimInSlot(slots[0], 'greeting');   break;
+      case '?': toggleHotkeys(); break;
+    }
+  });
+
+  // ── Background swatches ───────────────────────────────────
   const previewArea = document.getElementById('preview-area');
   document.querySelectorAll('.bg-swatch').forEach(s => {
     s.addEventListener('click', () => {
@@ -322,6 +658,9 @@
       previewArea.style.background = s.dataset.color;
     });
   });
+
+  // ── Init ──────────────────────────────────────────────────
+  renderSlots(['idle']);
 </script>
 </body>
 </html>
