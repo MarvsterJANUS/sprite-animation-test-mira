@@ -7,9 +7,7 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
 
     body {
       background: #1a1a2e;
@@ -69,9 +67,10 @@
     }
     .bg-swatch.active { border-color: #a78bfa; }
 
-    #sprite-canvas {
-      image-rendering: auto;
+    #sprite-video {
       border-radius: 6px;
+      object-fit: contain;
+      display: block;
     }
 
     #playback-controls {
@@ -133,16 +132,6 @@
       gap: 8px;
     }
 
-    input[type="number"], input[type="range"] {
-      background: #0f0f1a;
-      border: 1px solid #2d2d4e;
-      border-radius: 5px;
-      color: #e0e0e0;
-      font-size: 0.9rem;
-      padding: 5px 8px;
-      width: 80px;
-    }
-
     input[type="range"] {
       width: 100%;
       padding: 0;
@@ -184,15 +173,6 @@
       color: #e0e0e0;
     }
 
-    /* ── Frame range ── */
-    #frame-range-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-    }
-    #frame-range-row input[type="number"] { width: 64px; }
-
     /* ── Info bar ── */
     #info-bar {
       font-size: 0.78rem;
@@ -216,15 +196,13 @@
     <div class="bg-swatch" data-color="transparent" style="background: repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 0 0 / 12px 12px" title="Transparent"></div>
   </div>
 
-  <canvas id="sprite-canvas"></canvas>
+  <video id="sprite-video" loop muted playsinline autoplay></video>
 
   <div id="playback-controls">
     <button id="btn-play" class="primary">⏸ Pause</button>
-    <button id="btn-prev">&#9664; Prev</button>
-    <button id="btn-next">Next &#9654;</button>
     <button id="btn-reset">&#8635; Reset</button>
   </div>
-  <div id="info-bar">Frame <span id="frame-counter">0</span> / <span id="frame-total">85</span></div>
+  <div id="info-bar"><span id="time-display">0.0s / 0.0s</span></div>
 </div>
 
 <div id="settings">
@@ -239,43 +217,12 @@
     </div>
   </div>
 
-  <!-- Frame size -->
-  <div class="field">
-    <label>Frame Width (px)</label>
-    <input type="number" id="frameW" value="1080" min="1">
-  </div>
-  <div class="field">
-    <label>Frame Height (px)</label>
-    <input type="number" id="frameH" value="1920" min="1">
-  </div>
-
-  <!-- Grid -->
-  <div class="field">
-    <label>Columns</label>
-    <input type="number" id="cols" value="10" min="1">
-  </div>
-  <div class="field">
-    <label>Total Frames</label>
-    <input type="number" id="totalFrames" value="86" min="1">
-  </div>
-
-  <!-- Frame range -->
+  <!-- Speed -->
   <div class="field full">
-    <label>Frame Range (start – end)</label>
-    <div id="frame-range-row">
-      <input type="number" id="rangeStart" value="0" min="0">
-      <span>–</span>
-      <input type="number" id="rangeEnd" value="66" min="0">
-      <button id="btn-use-all" style="padding:4px 10px;font-size:0.78rem">Use all</button>
-    </div>
-  </div>
-
-  <!-- FPS -->
-  <div class="field full">
-    <label>Speed (FPS)</label>
+    <label>Speed</label>
     <div class="input-row">
-      <input type="range" id="fps" min="1" max="60" value="30">
-      <span class="value-badge" id="fps-val">30 fps</span>
+      <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1">
+      <span class="value-badge" id="speed-val">1×</span>
     </div>
   </div>
 
@@ -290,187 +237,74 @@
 
 </div>
 
-
 <script>
-  const BASE = 'https://github.com/MarvsterJANUS/sprite-animation-test-mira/releases/download/v1.0/';
   const ANIMS = {
-    idle:       { src: BASE + 'idle-spritesheet.png',       frameW: 1080, frameH: 1920, cols: 10, totalFrames: 86, rangeStart: 0, rangeEnd: 66 },
-    explaining: { src: BASE + 'explaining-spritesheet.png', frameW: 1080, frameH: 1920, cols: 9,  totalFrames: 75, rangeStart: 0, rangeEnd: 74 },
-    greeting:   { src: BASE + 'greeting-spritesheet.png',   frameW: 1080, frameH: 1920, cols: 10, totalFrames: 93, rangeStart: 0, rangeEnd: 92 },
+    idle:       { src: 'video-animations/idle.mp4' },
+    explaining: { src: 'video-animations/explaining.mp4' },
+    greeting:   { src: 'video-animations/greeting.mp4' },
   };
 
-  const canvas  = document.getElementById('sprite-canvas');
-  const ctx     = canvas.getContext('2d');
-  const img     = new Image();
+  const video = document.getElementById('sprite-video');
 
-  // Settings
-  let frameW      = 1080;
-  let frameH      = 1920;
-  let cols        = 10;
-  let totalFrames = 86;
-  let rangeStart  = 0;
-  let rangeEnd    = 66;
-  let fps         = 30;
-  let scale       = 0.3;
+  const FRAME_W = 1080;
+  const FRAME_H = 1920;
+  let scale = 0.3;
 
-  // State
-  let currentFrame = rangeStart;
-  let playing      = true;
-  let lastTime     = 0;
-  let rafId        = null;
-
-  // ── Image load ──────────────────────────────────────────
-  img.onload = () => {
-    applySettings();
-    requestAnimationFrame(loop);
-  };
-  img.onerror = () => {
-    ctx.fillStyle = '#ff4444';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Could not load sprite sheet.', 8, 20);
-  };
-  img.src = ANIMS.idle.src;
-
-  // ── Animation loop ──────────────────────────────────────
-  function loop(ts) {
-    rafId = requestAnimationFrame(loop);
-    if (!playing) return;
-    const interval = 1000 / fps;
-    if (ts - lastTime < interval) return;
-    lastTime = ts;
-    advance();
+  function applyScale() {
+    video.style.width  = (FRAME_W * scale) + 'px';
+    video.style.height = (FRAME_H * scale) + 'px';
   }
 
-  function advance() {
-    currentFrame++;
-    if (currentFrame > rangeEnd) currentFrame = rangeStart;
-    drawFrame();
-  }
-
-  function drawFrame() {
-    const col = currentFrame % cols;
-    const row = Math.floor(currentFrame / cols);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(
-      img,
-      col * frameW, row * frameH, frameW, frameH,
-      0, 0, frameW, frameH
-    );
-    document.getElementById('frame-counter').textContent = currentFrame;
-  }
-
-  // ── Settings apply ──────────────────────────────────────
-  function applySettings() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width  = frameW * dpr;
-    canvas.height = frameH * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    canvas.style.width  = (frameW * scale) + 'px';
-    canvas.style.height = (frameH * scale) + 'px';
-    currentFrame  = Math.max(rangeStart, Math.min(currentFrame, rangeEnd));
-    document.getElementById('frame-total').textContent = rangeEnd;
-    drawFrame();
-  }
-
-  // ── Controls ────────────────────────────────────────────
-  document.getElementById('btn-play').addEventListener('click', () => {
-    playing = !playing;
-    document.getElementById('btn-play').textContent = playing ? '⏸ Pause' : '▶ Play';
-  });
-
-  document.getElementById('btn-prev').addEventListener('click', () => {
-    playing = false;
-    document.getElementById('btn-play').textContent = '▶ Play';
-    currentFrame--;
-    if (currentFrame < rangeStart) currentFrame = rangeEnd;
-    drawFrame();
-  });
-
-  document.getElementById('btn-next').addEventListener('click', () => {
-    playing = false;
-    document.getElementById('btn-play').textContent = '▶ Play';
-    currentFrame++;
-    if (currentFrame > rangeEnd) currentFrame = rangeStart;
-    drawFrame();
-  });
-
-  document.getElementById('btn-reset').addEventListener('click', () => {
-    currentFrame = rangeStart;
-    drawFrame();
-  });
-
-  // ── Numeric inputs ──────────────────────────────────────
-  function bindNumber(id, setter) {
-    document.getElementById(id).addEventListener('change', e => {
-      const v = parseInt(e.target.value, 10);
-      if (!isNaN(v) && v > 0) { setter(v); applySettings(); }
-    });
-  }
-
-  bindNumber('frameW',      v => { frameW      = v; });
-  bindNumber('frameH',      v => { frameH      = v; });
-  bindNumber('cols',        v => { cols        = v; });
-  bindNumber('totalFrames', v => {
-    totalFrames = v;
-    const re = document.getElementById('rangeEnd');
-    rangeEnd = v - 1;
-    re.value = rangeEnd;
-  });
-
-  document.getElementById('rangeStart').addEventListener('change', e => {
-    const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 0) { rangeStart = v; applySettings(); }
-  });
-  document.getElementById('rangeEnd').addEventListener('change', e => {
-    const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 0) { rangeEnd = v; applySettings(); }
-  });
-
-  document.getElementById('btn-use-all').addEventListener('click', () => {
-    rangeStart = 0;
-    rangeEnd   = totalFrames - 1;
-    document.getElementById('rangeStart').value = 0;
-    document.getElementById('rangeEnd').value   = rangeEnd;
-    applySettings();
-  });
-
-  // ── Range sliders ───────────────────────────────────────
-  const fpsSlider = document.getElementById('fps');
-  fpsSlider.addEventListener('input', () => {
-    fps = parseInt(fpsSlider.value, 10);
-    document.getElementById('fps-val').textContent = fps + ' fps';
-  });
-
-  const scaleSlider = document.getElementById('scale');
-  scaleSlider.addEventListener('input', () => {
-    scale = parseFloat(scaleSlider.value);
-    document.getElementById('scale-val').textContent = scale.toFixed(2).replace(/\.?0+$/, '') + '×';
-    applySettings();
-  });
-
-  // ── Animation selector ─────────────────────────────────
+  // ── Load animation ──────────────────────────────────────
   function loadAnim(key) {
     const a = ANIMS[key];
     if (!a) return;
-    frameW      = a.frameW;
-    frameH      = a.frameH;
-    cols        = a.cols;
-    totalFrames = a.totalFrames;
-    rangeStart  = a.rangeStart;
-    rangeEnd    = a.rangeEnd;
-    currentFrame = rangeStart;
-
-    // Sync inputs
-    document.getElementById('frameW').value      = frameW;
-    document.getElementById('frameH').value      = frameH;
-    document.getElementById('cols').value        = cols;
-    document.getElementById('totalFrames').value = totalFrames;
-    document.getElementById('rangeStart').value  = rangeStart;
-    document.getElementById('rangeEnd').value    = rangeEnd;
-
-    img.src = a.src;  // triggers img.onload → applySettings
+    video.src = a.src;
+    video.load();
+    video.play();
   }
 
+  // ── Init ────────────────────────────────────────────────
+  applyScale();
+  loadAnim('idle');
+
+  // ── Time display ────────────────────────────────────────
+  video.addEventListener('timeupdate', () => {
+    const cur = video.currentTime.toFixed(1);
+    const dur = isNaN(video.duration) ? '0.0' : video.duration.toFixed(1);
+    document.getElementById('time-display').textContent = cur + 's / ' + dur + 's';
+  });
+
+  // ── Playback controls ───────────────────────────────────
+  document.getElementById('btn-play').addEventListener('click', () => {
+    if (video.paused) {
+      video.play();
+      document.getElementById('btn-play').textContent = '⏸ Pause';
+    } else {
+      video.pause();
+      document.getElementById('btn-play').textContent = '▶ Play';
+    }
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    video.currentTime = 0;
+  });
+
+  // ── Speed slider ────────────────────────────────────────
+  document.getElementById('speed').addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    video.playbackRate = v;
+    document.getElementById('speed-val').textContent = v + '×';
+  });
+
+  // ── Scale slider ────────────────────────────────────────
+  document.getElementById('scale').addEventListener('input', e => {
+    scale = parseFloat(e.target.value);
+    document.getElementById('scale-val').textContent = scale.toFixed(2).replace(/\.?0+$/, '') + '×';
+    applyScale();
+  });
+
+  // ── Animation selector ──────────────────────────────────
   document.querySelectorAll('.anim-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
@@ -480,11 +314,10 @@
   });
 
   // ── Background swatches ─────────────────────────────────
-  const swatches = document.querySelectorAll('.bg-swatch');
   const previewArea = document.getElementById('preview-area');
-  swatches.forEach(s => {
+  document.querySelectorAll('.bg-swatch').forEach(s => {
     s.addEventListener('click', () => {
-      swatches.forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
       s.classList.add('active');
       previewArea.style.background = s.dataset.color;
     });
