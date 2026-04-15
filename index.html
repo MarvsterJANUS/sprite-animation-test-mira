@@ -124,30 +124,43 @@
     }
     .scrub-track:hover .scrub-handle { opacity: 1; }
 
-    /* ── Mini animation selector (per slot) ── */
-    .slot-anim-selector {
-      display: flex;
-      gap: 5px;
-      width: 100%;
+    /* ── Focused slot (side-by-side) ── */
+    .video-slot { cursor: pointer; }
+    .video-slot.slot-focused video {
+      outline: 2px solid #7c3aed;
+      outline-offset: 3px;
+      border-radius: 6px;
     }
 
-    .slot-btn {
-      flex: 1;
+    /* ── Animation list (settings panel) ── */
+    #anim-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .anim-card {
+      width: 100%;
+      text-align: left;
+      padding: 9px 14px;
       background: #0f0f1a;
       border: 1px solid #2d2d4e;
-      border-radius: 5px;
-      color: #888;
-      font-size: 0.72rem;
-      padding: 4px 6px;
+      border-radius: 7px;
+      color: #aaa;
+      font-size: 0.88rem;
       cursor: pointer;
-      text-align: center;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
-    .slot-btn:hover { background: #1e1e3a; color: #e0e0e0; }
-    .slot-btn.active {
+    .anim-card:hover { background: #1e1e3a; color: #e0e0e0; }
+    .anim-card.active {
       background: #2d1b69;
       border-color: #7c3aed;
       color: #e0e0e0;
+    }
+    .anim-card.active::before {
+      content: '▶  ';
+      font-size: 0.7em;
+      color: #a78bfa;
     }
 
     .slot-time {
@@ -361,6 +374,13 @@
 <div id="settings">
 
   <div class="field">
+    <label>Animation</label>
+    <div id="anim-list"></div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="field">
     <label>View</label>
     <div class="btn-group">
       <button class="toggle-btn active" id="btn-single">Single</button>
@@ -406,6 +426,8 @@
       <kbd>1</kbd><span>Switch to Idle</span>
       <kbd>2</kbd><span>Switch to Explaining</span>
       <kbd>3</kbd><span>Switch to Greeting</span>
+      <kbd>4</kbd><span>Switch to Thinking</span>
+      <kbd>5</kbd><span>Switch to Thinking 2</span>
       <kbd>?</kbd><span>Toggle this panel</span>
     </div>
     <button id="btn-close-hotkeys">Close</button>
@@ -424,10 +446,11 @@
   const FRAME_W = 1080;
   const FRAME_H = 1920;
 
-  let scale      = 0.3;
-  let sideBySide = false;
-  let playing    = true;
-  let slots      = [];
+  let scale           = 0.3;
+  let sideBySide      = false;
+  let playing         = true;
+  let slots           = [];
+  let activeSlotIndex = 0;
   let activeScrubSlot = null;
 
   // ── Slot creation ────────────────────────────────────────
@@ -452,19 +475,6 @@
     scrubTrack.appendChild(scrubHandle);
     el.appendChild(scrubTrack);
 
-    // Mini anim selector
-    const selector = document.createElement('div');
-    selector.className = 'slot-anim-selector';
-    ANIM_KEYS.forEach(key => {
-      const btn = document.createElement('button');
-      btn.className = 'slot-btn' + (key === animKey ? ' active' : '');
-      btn.textContent = ANIMS[key].label;
-      btn.dataset.anim = key;
-      btn.addEventListener('click', () => loadAnimInSlot(slotObj, key));
-      selector.appendChild(btn);
-    });
-    el.appendChild(selector);
-
     // Time label
     const timeLabel = document.createElement('div');
     timeLabel.className = 'slot-time';
@@ -476,18 +486,46 @@
     video.addEventListener('timeupdate', () => updateScrub(slotObj));
     scrubTrack.addEventListener('mousedown', e => { activeScrubSlot = slotObj; seekSlot(e, slotObj); });
     scrubTrack.addEventListener('touchstart', e => { activeScrubSlot = slotObj; seekSlot(e.touches[0], slotObj); }, { passive: true });
+    el.addEventListener('click', () => setActiveSlot(slots.indexOf(slotObj)));
 
     return slotObj;
   }
 
   function loadAnimInSlot(slotObj, animKey) {
+    if (!slotObj || !ANIMS[animKey]) return;
     slotObj.animKey = animKey;
     slotObj.video.src = ANIMS[animKey].src;
     slotObj.video.load();
     if (playing) slotObj.video.play();
-    slotObj.el.querySelectorAll('.slot-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.anim === animKey);
+    updateAnimList();
+  }
+
+  // ── Animation list (settings panel) ──────────────────────
+  function buildAnimList() {
+    const list = document.getElementById('anim-list');
+    list.innerHTML = '';
+    ANIM_KEYS.forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'anim-card';
+      btn.dataset.anim = key;
+      btn.textContent = ANIMS[key].label;
+      btn.addEventListener('click', () => loadAnimInSlot(slots[activeSlotIndex], key));
+      list.appendChild(btn);
     });
+  }
+
+  function updateAnimList() {
+    const activeKey = slots[activeSlotIndex]?.animKey;
+    document.querySelectorAll('.anim-card').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.anim === activeKey);
+    });
+  }
+
+  function setActiveSlot(index) {
+    if (index < 0 || index >= slots.length) return;
+    activeSlotIndex = index;
+    slots.forEach((s, i) => s.el.classList.toggle('slot-focused', i === index && sideBySide));
+    updateAnimList();
   }
 
   // ── Render slots ─────────────────────────────────────────
@@ -505,6 +543,7 @@
       loadAnimInSlot(slotObj, key);
     }
     applyScale();
+    setActiveSlot(0);
   }
 
   // ── Scale ─────────────────────────────────────────────────
@@ -644,9 +683,11 @@
       case 's': case 'S':
         document.getElementById(sideBySide ? 'btn-single' : 'btn-sidebyside').click();
         break;
-      case '1': if (slots[0]) loadAnimInSlot(slots[0], 'idle');       break;
-      case '2': if (slots[0]) loadAnimInSlot(slots[0], 'explaining'); break;
-      case '3': if (slots[0]) loadAnimInSlot(slots[0], 'greeting');   break;
+      case '1': loadAnimInSlot(slots[activeSlotIndex], 'idle');       break;
+      case '2': loadAnimInSlot(slots[activeSlotIndex], 'explaining'); break;
+      case '3': loadAnimInSlot(slots[activeSlotIndex], 'greeting');   break;
+      case '4': loadAnimInSlot(slots[activeSlotIndex], 'thinking');   break;
+      case '5': loadAnimInSlot(slots[activeSlotIndex], 'thinking2');  break;
       case '?': toggleHotkeys(); break;
     }
   });
@@ -662,6 +703,7 @@
   });
 
   // ── Init ──────────────────────────────────────────────────
+  buildAnimList();
   renderSlots(['idle']);
 </script>
 </body>
