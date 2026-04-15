@@ -25,6 +25,32 @@
       padding: 16px;
     }
 
+    @media (max-width: 768px) {
+      html, body { height: auto; }
+
+      body {
+        height: auto;
+        min-height: 100svh;
+        overflow-y: auto;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+          "title"
+          "preview"
+          "settings";
+        gap: 12px;
+        padding: 12px;
+      }
+
+      #preview-area {
+        min-height: 60vw;
+      }
+
+      #settings {
+        width: 100%;
+      }
+    }
+
     h1 {
       grid-area: title;
       font-size: 1.2rem;
@@ -704,6 +730,9 @@
       previewArea.style.background = s.dataset.color;
     });
   });
+
+  // ── Resize → re-fit ──────────────────────────────────────
+  window.addEventListener('resize', fitToWindow);
 
   // ── Init ──────────────────────────────────────────────────
   buildAnimList();
